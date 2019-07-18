@@ -27,6 +27,7 @@
             type: Phaser.AUTO,
             width: 800,
             height: 600,
+            title: 'Hearts and bombs',
             physics: {
                 default: 'arcade',
                 arcade: {
@@ -48,35 +49,37 @@
         var player; // == our dude 
         var rubies; // --- things to collect 
         var score = 0;
-        var scoreText;
+        var scoreText, highScore;
         var bombs;
         var gameOver = false;
-        var myMusic;
+        var soundStart, soundStart1, soundJump;
+        //var myMusic;
 
         //------Music --------
-        function Sound(src) {
-            this.sound = document.createElement("audio");
-            this.sound.src = src;
-            this.sound.setAttribute("preload", "auto");
-            this.sound.setAttribute("controls", "none");
-            this.sound.style.display = "none";
-            document.body.appendChild(this.sound);
-            this.play = function() {
-                this.sound.play();
-                this.sound.setAttribute('loop', true);
-            }
-            this.stop = function() {
-                this.sound.pause();
-            }
-        }
-        myMusic = new Sound('SpotLight.mp3');
+        /*  function Sound(src) {
+              this.sound = document.createElement("audio");
+              this.sound.src = src;
+              this.sound.setAttribute("preload", "auto");
+              this.sound.setAttribute("controls", "none");
+              this.sound.style.display = "none";
+              document.body.appendChild(this.sound);
+              this.play = function() {
+                  this.sound.play();
+                  this.sound.setAttribute('loop', true);
+              }
+              this.stop = function() {
+                  this.sound.pause();
+              }
+          } */
+        //  myMusic = new Sound('SpotLight.mp3');
         // myMusic.play();
 
         function preload() {
+            //-----------------------load our images
 
-            this.load.image('sky', 'assets/sky.png');
+            this.load.image('sky', 'assets/bg1.jpg');
             this.load.image('star', 'assets/star.png');
-            this.load.image('ground', 'assets/platform.png');
+            this.load.image('ground', 'assets/platform1.png');
             this.load.image('bomb', 'assets/bomb.png');
 
             this.load.spritesheet('dude', 'assets/dude.png', {
@@ -84,11 +87,21 @@
                 frameHeight: 48
             });
             this.load.image('ruby', 'assets/ruby.png');
+
+            //--- load our game sounds
+            this.load.audio('jump', 'sounds/jump12.mp3');
+            this.load.audio('start', 'sounds/383231__artordie__standinmyway.mp3');
+            this.load.audio('start1', 'SpotLight.mp3');
+
+            this.load.audio('stop', 'sounds/piglevelwin2.mp3');
+            this.load.audio('bomb', 'sounds/sega.mp3');
+            this.load.audio('heart', 'sounds/drop.mp3');
+
         }
 
 
-        function create() {
-            this.add.image(0, 0, "sky").setOrigin(0, 0);
+        function create() { //////////////-------this will be created once
+            this.add.image(-30, 0, "sky").setOrigin(0, 0); //-----this is the background
 
             platforms = this.physics.add.staticGroup();
             platforms.create(400, 568, "ground").setScale(2).refreshBody(); //--ground
@@ -96,14 +109,24 @@
             platforms.create(600, 400, "ground");
             platforms.create(50, 250, "ground");
             platforms.create(750, 220, "ground");
+
+
             //---the stars )))
-            this.add.image(200, 50, "star");
-            this.add.image(100, 100, "star");
-            this.add.image(400, 50, "star");
-            this.add.image(450, 110, "star");
-            this.add.image(350, 120, "star");
-            this.add.image(600, 30, "star");
+            this.add.image(700, 50, "star");
+            this.add.image(450, 150, "star");
+            this.add.image(500, 120, "star");
+            //  this.add.image(450, 110, "star");
+            // this.add.image(350, 120, "star");
+            this.add.image(600, 50, "star");
             this.add.image(750, 70, "star");
+
+            soundStart = this.sound.add('start'); //-----------we'll add the starting sounds-------------         
+            soundStart1 = this.sound.add('start1'); //-----Music  
+            soundJump = this.sound.add('jump');
+
+            soundStart.play();
+            soundStart1.play();
+
 
             //---rubies to collect
             rubies = this.physics.add.group({
@@ -129,13 +152,16 @@
 
             //--- this is where we add some check for collisions
             this.physics.add.collider(player, platforms); // - --to step over platforms
-
             this.physics.add.overlap(player, rubies, collectRuby, null, this); // --here we check if the Dude overlaps the rubies
+
+            let soundRuby = this.sound.add('heart'); //-----to make a variable for a ruby/heart sound creation
+            let soundBomb = this.sound.add('bomb');
+
             function collectRuby(player, ruby) {
                 ruby.disableBody(true, true); //--to remove a ruby from the rubies Group
                 score += 10; //------to change the score
                 scoreText.setText("Score: " + score);
-
+                soundRuby.play(); //-----invoking the ruby/heart sound
                 //-------------here we check the number of rubies, if there are none, we need to respawn them
                 if (rubies.countActive(true) === 0) {
                     rubies.children.iterate(function(child) {
@@ -145,6 +171,7 @@
                     var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
 
                     var bomb = bombs.create(x, 16, "bomb");
+                    soundBomb.play();
                     bomb.setBounce(0.95);
                     bomb.setCollideWorldBounds(true);
                     bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
@@ -159,6 +186,9 @@
 
             this.physics.add.collider(player, bombs, hitBomb, null, this);
 
+            let soundStop = this.sound.add('stop');
+
+
             function hitBomb(player, bomb) {
                 this.physics.pause();
 
@@ -167,9 +197,20 @@
                 player.anims.play("turn");
 
                 gameOver = true;
-                myMusic.stop();
-                localStorage.setItem('score', JSON.stringify(score));
-                alert('Your Score ' + score);
+                soundStart1.stop();
+                soundStop.play();
+
+                if (localStorage.getItem('Score') == null) {
+                    localStorage.setItem('Score', score);
+                }
+
+                if (score > localStorage.getItem('Score')) {
+                    highScore = score;
+                    localStorage.setItem('Score', highScore)
+                }
+                alert('Your Score : ' + score);
+                alert('The Highest Score : ' + localStorage.getItem('Score'));
+
             }
             //------------------the dude's looks for movements
             this.anims.create({
@@ -203,9 +244,10 @@
             //--initial score text block, Courier by default
             scoreText = this.add.text(16, 16, "Score: 0", {
                 fontSize: "32px",
-                fill: "#640000"
+                fill: "#efe1cf"
             });
         }
+
 
         function update() {
 
@@ -224,6 +266,7 @@
                 player.setVelocityX(0);
 
                 player.anims.play("turn");
+
             }
 
             if (
@@ -231,13 +274,15 @@
                 player.body.touching.down
             ) {
                 player.setVelocityY(-330);
+                soundJump.play();
             }
+
         }
     </script>
-    <audio src="SpotLight.mp3" preload="auto" controls="none" style="display: none;"></audio>
+    <!--  <audio src="SpotLight.mp3" preload="auto" controls="none" style="display: none;"></audio> -->
     <br>
-    <button onclick="myMusic.play()">Music ON</button>
-    <button onclick="myMusic.stop()">Music OFF</button>
+    <button onclick="soundStart1.play()">Music ON</button>
+    <button onclick="soundStart1.pause()">Music OFF</button>
 
 </body>
 
