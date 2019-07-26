@@ -208,17 +208,12 @@
                 scoreArray.push(gamer);
                 scoreArray.sort((a, b) => b.score - a.score);
 
-                if (scoreArray.length <= 10) {
+                if (scoreArray.length > 10) {
+                    scoreArray = scoreArray.slice(0, 10);
 
-                    localStorage.setItem('scoreArray', JSON.stringify(scoreArray));
-                } else {
-                    scoreArray.push(gamer);
-
-                    scoreArray.sort((a, b) => b.score - a.score);
-                    scoreArray.splice(0, 9)
                 }
 
-
+                localStorage.setItem('scoreArray', JSON.stringify(scoreArray));
                 alert('Your Score : ' + score);
                 alert('High Score : ' + localStorage.getItem('scoreArray'));
 
