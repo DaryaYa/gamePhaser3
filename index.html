@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <script src="jquery-3.4.1.min.js"></script>
+    <title>Hearts and Bombs</title>
+    <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
+    <script src="assets/phaser.js"></script>
+    <style>
+        canvas {
+            border: 2px solid rgb(27, 10, 99);
+            display: block;
+        }
+        
+        button {
+            background-color: rgb(99, 199, 238);
+            display: inline-block;
+            margin: 10px auto;
+        }
+        
+        a {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script>
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            title: 'Hearts and bombs',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: {
+                        y: 300
+                    },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            },
+
+        };
+
+        var game = new Phaser.Game(config);
+
+
+        var platforms; // ---  pieces of the ground in the air, from which we'll do the Group
+        var player; // == our dude 
+        var rubies; // --- ruby hearts to collect 
+        var score = 0;
+        var scoreArray = [];
+        var scoreText, highScore;
+        var bombs;
+        var gameOver = false;
+        var soundStart, soundStart1, soundJump;
+
+
+        function preload() {
+            //-----------------------load our images
+
+            this.load.image('sky', 'assets/bg1.jpg');
+            this.load.image('star', 'assets/star.png');
+            this.load.image('ground', 'assets/platform1.png');
+            this.load.image('bomb', 'assets/bomb.png');
+
+            this.load.spritesheet('dude', 'assets/dude.png', {
+                frameWidth: 32,
+                frameHeight: 48
+            });
+            this.load.image('ruby', 'assets/ruby.png');
+
+            //--- load our game sounds
+            this.load.audio('jump', 'sounds/jump12.mp3');
+            this.load.audio('start', 'sounds/383231__artordie__standinmyway.mp3');
+            this.load.audio('start1', 'SpotLight.mp3');
+
+            this.load.audio('stop', 'sounds/piglevelwin2.mp3');
+            this.load.audio('bomb', 'sounds/sega.mp3');
+            this.load.audio('heart', 'sounds/drop.mp3');
+
+        }
+
+
+        function create() { //////////////-------this will be created once
+            this.add.image(-30, 0, "sky").setOrigin(0, 0); //-----this is the background
+
+            platforms = this.physics.add.staticGroup();
+            platforms.create(400, 568, "ground").setScale(2).refreshBody(); //--ground
+
+            platforms.create(600, 400, "ground");
+            platforms.create(50, 250, "ground");
+            platforms.create(750, 220, "ground");
+
+
+            //---the stars )))
+            this.add.image(700, 50, "star");
+            this.add.image(450, 150, "star");
+            this.add.image(500, 120, "star");
+            //  this.add.image(450, 110, "star");
+            // this.add.image(350, 120, "star");
+            this.add.image(600, 50, "star");
+            this.add.image(750, 70, "star");
+
+            soundStart = this.sound.add('start'); //-----------we'll add the starting sounds-------------         
+            soundStart1 = this.sound.add('start1'); //-----Music  
+            soundJump = this.sound.add('jump');
+
+            soundStart.play();
+            soundStart1.play();
+
+
+            //---rubies to collect
+            rubies = this.physics.add.group({
+                key: "ruby",
+                repeat: 11,
+                setXY: {
+                    x: 12,
+                    y: 0,
+                    stepX: 70
+                }
+            });
+
+            rubies.children.iterate(function(child) {
+                child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+            });
+            this.physics.add.collider(rubies, platforms); //--- for the rubies not to fall down through the grounds
+
+
+            // -----player------------
+            player = this.physics.add.sprite(100, 350, "dude"); //--- our dude and sprite frames shown
+            player.setBounce(0.4);
+            player.setCollideWorldBounds(true);
+
+            //--- this is where we add some check for collisions
+            this.physics.add.collider(player, platforms); // - --to step over platforms
+            this.physics.add.overlap(player, rubies, collectRuby, null, this); // --here we check if the Dude overlaps the rubies
+
+            let soundRuby = this.sound.add('heart'); //-----to make a variable for a ruby/heart sound creation
+            let soundBomb = this.sound.add('bomb');
+
+            function collectRuby(player, ruby) {
+                ruby.disableBody(true, true); //--to remove a ruby from the rubies Group
+                score += 10; //------to change the score
+                scoreText.setText("Score: " + score);
+                soundRuby.play(); //-----invoking the ruby/heart sound
+                //-------------here we check the number of rubies, if there are none, we need to respawn them
+                if (rubies.countActive(true) === 0) {
+                    rubies.children.iterate(function(child) {
+                        child.enableBody(true, child.x, 0, true, true); //--we give position Y =0 to fall them again
+                    });
+                    //----we give the initial coords and speed to bombs
+                    var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+                    var bomb = bombs.create(x, 16, "bomb");
+                    soundBomb.play();
+                    bomb.setBounce(0.95);
+                    bomb.setCollideWorldBounds(true);
+                    bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+                }
+                return score;
+            }
+
+            //----bombs------
+            bombs = this.physics.add.group();
+
+            this.physics.add.collider(bombs, platforms);
+
+            this.physics.add.collider(player, bombs, hitBomb, null, this);
+
+            let soundStop = this.sound.add('stop');
+
+
+            function hitBomb(player, bomb) {
+                this.physics.pause();
+
+                player.setTint(0xff0000);
+
+                player.anims.play("turn");
+
+                gameOver = true;
+                soundStart1.stop();
+                soundStop.play();
+
+                var gamer = {};
+                var user = prompt("ВВедите имя");
+
+                gamer.name = user;
+                gamer.score = score;
+
+
+                if (localStorage.getItem('scoreArray') !== null) {
+                    scoreArray = JSON.parse(localStorage.getItem('scoreArray'));
+                }
+
+                scoreArray.push(gamer);
+                scoreArray.sort((a, b) => b.score - a.score);
+
+                if (scoreArray.length <= 10) {
+
+                    localStorage.setItem('scoreArray', JSON.stringify(scoreArray));
+                } else {
+                    scoreArray.push(gamer);
+
+                    scoreArray.sort((a, b) => b.score - a.score);
+                    scoreArray.splice(0, 9)
+                }
+
+
+                alert('Your Score : ' + score);
+                alert('High Score : ' + localStorage.getItem('scoreArray'));
+
+            }
+
+
+            //------------------the dude's looks for movements
+            this.anims.create({
+                key: "left",
+                frames: this.anims.generateFrameNumbers("dude", {
+                    start: 0,
+                    end: 3
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+
+            this.anims.create({
+                key: "turn",
+                frames: [{
+                    key: "dude",
+                    frame: 4
+                }],
+                frameRate: 5
+            });
+
+            this.anims.create({
+                key: "right",
+                frames: this.anims.generateFrameNumbers("dude", {
+                    start: 5,
+                    end: 8
+                }),
+                frameRate: 10,
+                repeat: -1
+            });
+            //--initial score text block, Courier by default
+            scoreText = this.add.text(16, 16, "Score: 0", {
+                fontSize: "32px",
+                fill: "#efe1cf"
+            });
+
+        }
+
+
+
+        function update() {
+
+            var cursors = this.input.keyboard.createCursorKeys();
+
+            // ---the control of the dude
+            if (cursors.left.isDown) {
+                player.setVelocityX(-160);
+
+                player.anims.play("left", true);
+            } else if (cursors.right.isDown) {
+                player.setVelocityX(160);
+
+                player.anims.play("right", true);
+            } else {
+                player.setVelocityX(0);
+
+                player.anims.play("turn");
+
+            }
+
+            if (
+                cursors.up.isDown &&
+                player.body.touching.down
+            ) {
+                player.setVelocityY(-330);
+                soundJump.play();
+            }
+
+        }
+        window.addEventListener('keydown', pauseGame);
+
+        function pauseGame(event) {
+            if (event.keyCode === 32) {
+
+                alert('PAUSE');
+            }
+            return true;
+        }
+    </script>
+
+    <br>
+    <button onclick="soundStart1.play()">Music ON</button>
+    <button onclick="soundStart1.pause()">Music OFF</button>
+
+    <button><a href="relax.html">RELAX</a></button>
+
+</body>
+
+</html>
