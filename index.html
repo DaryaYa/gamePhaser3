@@ -214,9 +214,52 @@
                 }
 
                 localStorage.setItem('scoreArray', JSON.stringify(scoreArray));
-                alert('Your Score : ' + score);
-                alert('High Score : ' + localStorage.getItem('scoreArray'));
+                 // ----------------------------MODAL ------------------------------------
+                var modal = document.getElementById('myModal');
+                var modalContent = document.getElementsByClassName('modal-content')[0];
 
+                function modalOpen() {
+                    modal.style.display = 'block';
+                }
+
+
+                function modalClose(event) {
+                    if (event.target == modal) {
+                        modal.style.display = 'none';
+                    }
+                }
+                //------------------ DIVs-----------------
+
+                let elements = [];
+                modalOpen();
+                document.addEventListener('click', modalClose);
+
+                function addScore() {
+
+                    for (var i = 0; i < scoreArray.length; i++) {
+                        let name = document.createElement("div");
+                        let score = document.createElement("div");
+                        name.classList.add("name");
+                        score.classList.add("score");
+                        name.innerText = scoreArray[i].name;
+                        score.innerText = scoreArray[i].score;
+
+                        let scoreRow = document.createElement("div");
+                        scoreRow.classList.add("row");
+                        scoreRow.appendChild(name);
+                        scoreRow.appendChild(score);
+                        modalContent.appendChild(scoreRow);
+
+                        elements.push(scoreRow);
+
+                    }
+                    modal.appendChild(modalContent);
+                    let colors = ["gold", "silver", "#cd7f32"];
+                    for (let i = 0; i < 3; i++) {
+                        elements[i].style.color = colors[i];
+                    }
+                }
+                addScore();
             }
 
 
