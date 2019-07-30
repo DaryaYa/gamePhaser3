@@ -10,14 +10,19 @@
     <title>Hearts and Bombs</title>
     <link rel="shortcut icon" href="icon.ico" type="image/x-icon">
     <script src="assets/phaser.js"></script>
-    <style>
+   <style>
+        body {
+            background: #000;
+        }
+        
         canvas {
             border: 2px solid rgb(27, 10, 99);
             display: block;
+            margin: auto;
         }
         
         button {
-            background-color: rgb(99, 199, 238);
+            background-color: rgb(45, 195, 206);
             display: inline-block;
             margin: 10px auto;
         }
@@ -26,11 +31,75 @@
             color: black;
             text-decoration: none;
         }
+        
+        .modal {
+            display: none;
+            position: absolute;
+            z-index: 3;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(146, 140, 142, 0.5)
+        }
+        
+        .modal-content {
+            background-color: rgb(1, 42, 48);
+            border: 1px solid rgb(58, 2, 75);
+            margin: 15% auto;
+            padding: 20px;
+            width: 50%;
+            color: #f0c995;
+            font-size: 24px;
+        }
+        
+        .headOfL {
+            color: #efe1cf;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 auto;
+        }
+        
+        .row {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: 40px;
+            border-bottom: 1px solid #AFAFAF;
+        }
+        
+        .name {
+            position: relative;
+            display: inline-block;
+            width: 75%;
+            line-height: 45px;
+        }
+        
+        .score {
+            position: relative;
+            display: inline-block;
+            width: 25%;
+        }
+        
+        .buttons {
+            width: 15%;
+            margin: 10px auto;
+        }
     </style>
+
 </head>
 
 <body>
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <div class="row">
+                <div class="name">NAMES</div>
+                <div class="score" style="margin: -5px">SCORE</div>
 
+            </div>
+        </div>
+    </div>
     <script>
         var config = {
             type: Phaser.AUTO,
