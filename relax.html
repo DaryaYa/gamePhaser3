@@ -138,7 +138,7 @@
                         }
                     }
                     this.hitBottom();
-                    this.hitFloor();
+                    this.hitTop();
                 }
                 //ctx = myGameArea.context;
             this.update = function() {
@@ -186,7 +186,7 @@
                     this.gravitySpeed = 0;
                 }
             }
-            this.hitFloor = function() {
+            this.hitTop = function() {
 
                 if (this.y < 0) {
                     this.y = 0;
